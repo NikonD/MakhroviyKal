@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Экспертное заключение — генератор</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">ЭЗ</span>
+      <div>
+        <h1>Экспертное заключение</h1>
+        <p>Распознавание сертификатов из PDF и генерация итогового документа</p>
+      </div>
+    </div>
+    <div class="api-key-block">
+      <div class="key-row">
+        <label for="openrouterKey">OpenRouter</label>
+        <input id="openrouterKey" type="password" placeholder="sk-or-v1-..." autocomplete="off">
+        <a class="help" href="https://openrouter.ai/keys" target="_blank" rel="noopener">ключ</a>
+      </div>
+      <div class="key-row">
+        <label for="apiKey">Gemini (резерв)</label>
+        <input id="apiKey" type="password" placeholder="AIza..." autocomplete="off">
+        <a class="help" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">ключ</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Step 1: Upload -->
+    <section id="step-upload" class="card">
+      <div class="step-head">
+        <span class="step-num">1</span>
+        <h2>Загрузите PDF с заявлением и сертификатами</h2>
+      </div>
+      <label class="dropzone" id="dropzone">
+        <input type="file" id="pdfInput" accept="application/pdf" hidden>
+        <div class="dz-inner">
+          <svg viewBox="0 0 24 24" width="48" height="48" aria-hidden="true">
+            <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z"/>
+          </svg>
+          <p><strong>Кликните</strong> или перетащите PDF сюда</p>
+          <p class="dz-hint">Первая страница — заявление, остальные — сертификаты</p>
+        </div>
+      </label>
+      <div class="actions">
+        <button id="analyzeBtn" class="btn-primary" disabled>Распознать</button>
+        <span id="uploadMeta" class="meta"></span>
+      </div>
+    </section>
+
+    <!-- Loading -->
+    <section id="step-loading" class="card hidden">
+      <div class="loader"></div>
+      <p id="loadingText">Распознаём документ через Gemini Vision…</p>
+    </section>
+
+    <!-- Step 2: Editor -->
+    <section id="step-editor" class="card hidden">
+      <div class="step-head">
+        <span class="step-num">2</span>
+        <h2>Проверьте распознанные данные</h2>
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label>ФИО студента</label>
+          <input id="fStudent" type="text">
+        </div>
+        <div class="field">
+          <label>Группа</label>
+          <input id="fGroup" type="text">
+        </div>
+        <div class="field">
+          <label>Код и наименование ОП</label>
+          <input id="fProgram" type="text" placeholder="6B06105 «Архитектор программного обеспечения»">
+        </div>
+        <div class="field">
+          <label>Курс</label>
+          <input id="fYear" type="text">
+        </div>
+      </div>
+
+      <div class="cert-pool">
+        <h3>Распознанные сертификаты</h3>
+        <p class="hint">Перетащите карточку в нужную дисциплину или нажмите «→» чтобы привязать. Можно редактировать поля прямо в карточке.</p>
+        <div id="certPool" class="cert-list"></div>
+      </div>
+
+      <div class="disciplines">
+        <div class="row-head">
+          <h3>Дисциплины из заявления</h3>
+          <button id="addDisciplineBtn" class="btn-ghost">+ Добавить дисциплину</button>
+        </div>
+        <div id="disciplineList"></div>
+      </div>
+
+      <div class="actions actions-right">
+        <button id="backBtn" class="btn-ghost">← Назад</button>
+        <button id="generateBtn" class="btn-primary">Сгенерировать DOCX</button>
+      </div>
+    </section>
+
+    <div id="toast" class="toast hidden"></div>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
