@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import os
 import re
+import urllib.parse
 from pathlib import Path
 from typing import Any
 
@@ -187,11 +188,12 @@ async def generate(req: GenerateRequest):
     data = doc_generator.build_report(payload)
     safe_name = re.sub(r"[^\w\-]+", "_", req.student_name) or "report"
     filename = f"ЭЗ_{safe_name}.docx"
+    encoded_filename = urllib.parse.quote(filename)
     return Response(
         content=data,
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         headers={
-            "Content-Disposition": f'attachment; filename="{filename}"; filename*=UTF-8\'\'{filename}',
+            "Content-Disposition": f'attachment; filename="report.docx"; filename*=utf-8\'\'{encoded_filename}',
         },
     )
 

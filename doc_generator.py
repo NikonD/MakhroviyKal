@@ -32,10 +32,23 @@ class CourseEntry:
     grade: str = ""
     date: str = ""
 
+    @property
+    def clean_hours(self) -> str:
+        if not self.hours.strip():
+            return ""
+        m = re.search(r"(\d+(?:[.,]\d+)?)", self.hours)
+        if m:
+            try:
+                val = float(m.group(1).replace(",", "."))
+                return f"{int(val)} ч" if val.is_integer() else f"{val} ч"
+            except ValueError:
+                pass
+        return self.hours.strip()
+
     def format(self) -> str:
-        """«Название курса (Провайдер, дата)» — без часов, они идут в отдельную колонку."""
+        """«Название курса (Провайдер, часы)» — вместо даты выводим часы."""
         head = self.course_title.strip()
-        meta_bits = [b for b in (self.provider.strip(), self.date.strip()) if b]
+        meta_bits = [b for b in (self.provider.strip(), self.clean_hours) if b]
         if meta_bits:
             head = f"{head} ({', '.join(meta_bits)})" if head else f"({', '.join(meta_bits)})"
         return head
@@ -145,10 +158,10 @@ def list_hours_text(entries: list[CourseEntry]) -> str:
     return "\n".join(lines)
 
 
-def list_grades_text(entries: list[CourseEntry]) -> str:
-    """Баллы/оценки каждого курса по строкам."""
-    lines = [e.grade.strip() or "—" for e in entries if e.course_title.strip()]
-    return "\n".join(lines)
+# def list_grades_text(entries: list[CourseEntry]) -> str:
+#     """Баллы/оценки каждого курса по строкам."""
+#     lines = [e.grade.strip() or "—" for e in entries if e.course_title.strip()]
+#     return "\n".join(lines)
 
 
 # ---------------------------------------------------------------------------
@@ -170,7 +183,7 @@ HEADERS_ROW_1_AT: dict[int, str] = {
 HEADERS_ROW_2_AT: dict[int, str] = {
     4: "Наименование перезачитываемых дисциплин и видов учебной работы",
     5: "Количество кредитов",
-    6: "Наименование курса неформального обучения (наименование, номер, дата документа)",
+    6: "Наименование курса неформального обучения (наименование, номер, количество часов)",
     7: "Количество кредитов (часов)",
     8: "Баллы (оценка)",
     9: "Соответствие целей программы обучения, объёма программы и оценки (полное, частичное, не соответствует)",
@@ -369,12 +382,13 @@ def build_report(payload: ReportPayload) -> bytes:
         ) or ""
         compliance = row_data.compliance or ("" if is_group else "полное")
         if is_group:
-            hours_cell = row_data.total_hours or list_hours_text(row_data.courses)
-            grade_cell = row_data.grade_points or list_grades_text(row_data.courses)
+            hours_cell = row_data.total_hours or sum_hours_text(row_data.courses)
+            #grade_cell = row_data.grade_points or list_grades_text(row_data.courses)
+            grade_cell=""
         else:
             hours_cell = row_data.total_hours or sum_hours_text(row_data.courses)
             grade_cell = row_data.grade_points or (
-                row_data.courses[0].grade.strip() if row_data.courses else ""
+            row_data.courses[0].grade.strip() if row_data.courses else ""
             )
 
         values = [

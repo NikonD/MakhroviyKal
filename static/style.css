@@ -152,10 +152,11 @@ button {
 #step-loading p { color: var(--muted); margin: 0; }
 
 /* Fields */
-.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 20px; }
 .field { display: flex; flex-direction: column; gap: 4px; }
 .field label { font-size: 12px; color: var(--muted); }
 .field input, .field textarea {
+  width: 100%; min-width: 0;
   border: 1px solid var(--border); border-radius: 8px;
   padding: 8px 10px; font-size: 14px; font-family: inherit; outline: none;
   background: var(--surface);
@@ -166,9 +167,55 @@ button {
 h3 { font-size: 14px; margin: 0 0 8px; font-weight: 600; }
 .hint { color: var(--muted); font-size: 12px; margin: 0 0 12px; }
 
-/* Cert pool */
-.cert-pool { margin-bottom: 24px; }
-.cert-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; min-height: 60px; }
+/* Editor Split Layout */
+.editor-split {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 32px;
+  align-items: start;
+  margin-bottom: 24px;
+}
+@media (max-width: 900px) {
+  .editor-split {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Cert pool panel */
+.cert-pool {
+  position: sticky;
+  top: 24px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.02);
+}
+.cert-pool h3 {
+  margin: 0 0 8px 0;
+  font-size: 15px;
+}
+.cert-pool .hint {
+  margin: 0 0 16px 0;
+  line-height: 1.4;
+}
+
+.cert-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 80px;
+  max-height: calc(100vh - 180px);
+  overflow-y: auto;
+  padding-right: 6px;
+  padding-bottom: 10px;
+}
+
+/* Custom Scrollbar for cert-list */
+.cert-list::-webkit-scrollbar { width: 5px; }
+.cert-list::-webkit-scrollbar-track { background: transparent; }
+.cert-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 5px; }
+.cert-list::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 .cert-pool .cert-list:empty::after {
   content: "Все сертификаты привязаны";
   color: var(--muted);
@@ -177,15 +224,25 @@ h3 { font-size: 14px; margin: 0 0 8px; font-weight: 600; }
 }
 
 .cert-card {
-  background: var(--bg);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 10px 12px;
+  padding: 12px 14px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   cursor: grab;
   position: relative;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.cert-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+.cert-card:active {
+  transform: translateY(0);
+  cursor: grabbing;
 }
 .cert-card.dragging { opacity: .5; }
 .cert-card .cert-title {
@@ -224,60 +281,64 @@ h3 { font-size: 14px; margin: 0 0 8px; font-weight: 600; }
 .cert-card .cert-content { margin-top: 14px; }
 
 /* Disciplines */
-.disciplines { margin-bottom: 20px; }
+.disciplines { margin-bottom: 0; }
 .row-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
 
 .discipline {
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
   background: var(--bg);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.01);
 }
-.discipline-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.discipline-head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
 .discipline-head .idx {
   background: var(--primary); color: white;
-  width: 24px; height: 24px;
+  width: 26px; height: 26px;
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   font-size: 12px; font-weight: 600;
+  flex-shrink: 0;
 }
 .discipline-head input.disc-name {
   flex: 1;
   border: 1px solid transparent;
   background: transparent;
   font-size: 15px; font-weight: 500;
-  padding: 4px 8px;
+  padding: 6px 10px;
   border-radius: 6px;
   outline: none;
+  transition: all 0.2s;
 }
 .discipline-head input.disc-name:hover { border-color: var(--border); background: white; }
-.discipline-head input.disc-name:focus { border-color: var(--primary); background: white; }
+.discipline-head input.disc-name:focus { border-color: var(--primary); background: white; box-shadow: 0 0 0 3px var(--primary-soft); }
 
 .discipline-fields {
-  display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px;
-  margin-bottom: 12px;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px;
+  margin-bottom: 16px;
 }
-.discipline-fields .field label { font-size: 10px; }
-.discipline-fields .field input { padding: 6px 8px; font-size: 13px; }
+.discipline-fields .field label { font-size: 11px; margin-bottom: 2px; }
+.discipline-fields .field input { width: 100%; min-width: 0; padding: 8px 10px; font-size: 13px; }
 
 .discipline-drop {
   background: var(--surface);
-  border: 1px dashed var(--border);
-  border-radius: 8px;
-  padding: 8px;
-  min-height: 50px;
-  display: flex; flex-direction: column; gap: 6px;
-  transition: all .15s;
+  border: 2px dashed #cbd5e1;
+  border-radius: 10px;
+  padding: 16px;
+  min-height: 60px;
+  display: flex; flex-direction: column; gap: 8px;
+  transition: all .2s ease;
 }
 .discipline-drop.over {
   border-color: var(--primary);
   background: var(--primary-soft);
+  transform: scale(1.005);
 }
 .discipline-drop:empty::after {
-  content: "перетащите сюда сертификат(ы) из списка выше";
-  color: var(--muted); font-size: 12px; font-style: italic;
-  text-align: center; padding: 8px;
+  content: "перетащите сюда сертификат(ы) из панели слева";
+  color: var(--muted); font-size: 13px; font-style: italic;
+  text-align: center; padding: 12px;
 }
 .discipline-drop .cert-card {
   background: white;
