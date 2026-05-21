@@ -15,6 +15,7 @@ const state = {
 };
 
 let nextCertId = 1;
+let activeRequestId = null; // если открыто из очереди /approve
 
 // ===== Step 1: upload =====
 const dz = $("dropzone");
@@ -84,6 +85,201 @@ analyzeBtn.addEventListener("click", async () => {
     $("step-upload").classList.remove("hidden");
   }
 });
+
+// ===== Load from queue by ?request=ID =====
+async function maybeLoadFromQueue() {
+  const params = new URLSearchParams(location.search);
+  const rid = params.get("request");
+  if (!rid) return;
+  activeRequestId = rid;
+
+  // в режиме апрува шаг загрузки скрываем
+  $("step-upload").classList.add("hidden");
+  $("step-loading").classList.remove("hidden");
+  $("loadingText").textContent = "Загружаем распознанные данные из очереди…";
+  try {
+    const res = await fetch(`/api/requests/${encodeURIComponent(rid)}`);
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    populateFromAnalyze(data.analyze);
+    if (data.edit) applyEditState(data.edit);
+    showQueueDriveLink(data);
+    $("step-loading").classList.add("hidden");
+    $("step-editor").classList.remove("hidden");
+    injectApproveControls();
+  } catch (e) {
+    toast("Не удалось загрузить заявку: " + e.message, "error");
+    $("step-loading").classList.add("hidden");
+    $("step-upload").classList.remove("hidden");
+    activeRequestId = null;
+  }
+}
+
+function showQueueDriveLink(data) {
+  const head = document.querySelector("#step-editor .step-head");
+  if (!head) return;
+  head.querySelector(".queue-drive-link")?.remove();
+  const url = data.drive_file_url || (
+    data.drive_file_id
+      ? `https://drive.google.com/file/d/${encodeURIComponent(data.drive_file_id)}/view`
+      : ""
+  );
+  if (!url) return;
+  const a = document.createElement("a");
+  a.className = "queue-drive-link";
+  a.href = url;
+  a.target = "_blank";
+  a.rel = "noopener noreferrer";
+  a.textContent = "Исходный PDF на Google Drive";
+  head.appendChild(a);
+}
+
+function applyEditState(edit) {
+  if (!edit) return;
+  if (edit.student) {
+    $("fStudent").value = edit.student.name ?? $("fStudent").value;
+    $("fGroup").value = edit.student.group ?? $("fGroup").value;
+    $("fProgram").value = edit.student.program_code ?? $("fProgram").value;
+    $("fYear").value = edit.student.course_year ?? $("fYear").value;
+  }
+  if (Array.isArray(edit.disciplines)) {
+    state.disciplines = edit.disciplines.map((d) => ({
+      name: d.name ?? "",
+      plan_credits: d.plan_credits ?? "5",
+      total_hours: d.total_hours ?? "",
+      grade_points: d.grade_points ?? "",
+      compliance: d.compliance ?? "полное",
+      note: d.note ?? "",
+      final_grade: d.final_grade ?? "",
+    }));
+  }
+  if (Array.isArray(edit.certificates)) {
+    state.certificates = edit.certificates.map((c) => ({
+      page: c.page ?? 0,
+      course_title: c.course_title ?? "",
+      provider: c.provider ?? "",
+      hours: c.hours ?? "",
+      grade: c.grade ?? "",
+      date: c.date ?? "",
+      _bound: c._bound ?? null,
+      _id: nextCertId++,
+    }));
+  }
+  render();
+}
+
+function currentEditState() {
+  return {
+    student: {
+      name: $("fStudent").value.trim(),
+      group: $("fGroup").value.trim(),
+      program_code: $("fProgram").value.trim(),
+      course_year: $("fYear").value.trim(),
+    },
+    disciplines: state.disciplines.map((d) => ({ ...d })),
+    certificates: state.certificates.map((c) => ({
+      page: c.page,
+      course_title: c.course_title,
+      provider: c.provider,
+      hours: c.hours,
+      grade: c.grade,
+      date: c.date,
+      _bound: c._bound,
+    })),
+  };
+}
+
+async function saveQueueEditState() {
+  if (!activeRequestId) return;
+  const payload = currentEditState();
+  const res = await fetch(`/api/requests/${encodeURIComponent(activeRequestId)}/edit`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error(await res.text());
+}
+
+function injectApproveControls() {
+  // добавляем кнопки "Сохранить" + "Апрув" рядом с Generate
+  const actions = document.querySelector("#step-editor .actions.actions-right");
+  if (!actions || actions.dataset.hasApprove === "1") return;
+  actions.dataset.hasApprove = "1";
+
+  const reanalyzeBtn = document.createElement("button");
+  reanalyzeBtn.className = "btn-ghost";
+  reanalyzeBtn.textContent = "Распознать заново";
+  reanalyzeBtn.addEventListener("click", async () => {
+    if (!activeRequestId) return;
+    if (!confirm(
+      "Заново распознать PDF с Google Drive?\n\nТекущие правки в форме будут заменены (30–90 сек)."
+    )) return;
+    reanalyzeBtn.disabled = true;
+    $("step-editor").classList.add("hidden");
+    $("step-loading").classList.remove("hidden");
+    $("loadingText").textContent = "Повторное распознавание PDF с Drive…";
+    try {
+      const res = await fetch(
+        `/api/requests/${encodeURIComponent(activeRequestId)}/reanalyze`,
+        { method: "POST" }
+      );
+      if (!res.ok) {
+        const err = (await res.json().catch(() => null))?.detail || await res.text();
+        throw new Error(err);
+      }
+      const data = await res.json();
+      nextCertId = 1;
+      populateFromAnalyze(data.analyze);
+      if (data.edit) applyEditState(data.edit);
+      $("step-loading").classList.add("hidden");
+      $("step-editor").classList.remove("hidden");
+      if (data.errors?.length) {
+        toast(`Распознано с замечаниями: ${data.errors[0]}`, "error");
+      } else {
+        toast("Распознавание обновлено", "success");
+      }
+    } catch (e) {
+      toast("Ошибка распознавания: " + e.message, "error");
+      $("step-loading").classList.add("hidden");
+      $("step-editor").classList.remove("hidden");
+    } finally {
+      reanalyzeBtn.disabled = false;
+    }
+  });
+
+  const saveBtn = document.createElement("button");
+  saveBtn.className = "btn-ghost";
+  saveBtn.textContent = "Сохранить черновик";
+  saveBtn.addEventListener("click", async () => {
+    try {
+      await saveQueueEditState();
+      toast("Сохранено", "success");
+    } catch (e) {
+      toast("Ошибка сохранения: " + e.message, "error");
+    }
+  });
+
+  const approveBtn = document.createElement("button");
+  approveBtn.className = "btn-primary";
+  approveBtn.textContent = "Апрув + отправить в Drive";
+  approveBtn.addEventListener("click", async () => {
+    try {
+      await saveQueueEditState();
+      const res = await fetch(`/api/requests/${encodeURIComponent(activeRequestId)}/approve`, {
+        method: "POST",
+      });
+      if (!res.ok) throw new Error(await res.text());
+      toast("Отправлено в Google Drive", "success");
+      setTimeout(() => (location.href = "/approve"), 700);
+    } catch (e) {
+      toast("Ошибка апрува: " + e.message, "error");
+    }
+  });
+
+  actions.insertBefore(reanalyzeBtn, $("generateBtn"));
+  actions.insertBefore(saveBtn, $("generateBtn"));
+  actions.insertBefore(approveBtn, $("generateBtn"));
+}
 
 // ===== Populate editor =====
 function populateFromAnalyze(data) {
@@ -362,3 +558,6 @@ if (savedOR) $("openrouterKey").value = savedOR;
 $("openrouterKey").addEventListener("change", () => {
   localStorage.setItem("openrouter_key", $("openrouterKey").value.trim());
 });
+
+// init
+maybeLoadFromQueue();

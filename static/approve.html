@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Апрув заявлений — Экспертное заключение</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link id="favicon" rel="icon" type="image/x-icon" href="/static/favicon.ico">
+</head>
+
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">ЭЗ</span>
+      <div>
+        <h1>Апрув заявлений</h1>
+        <p>Обработанные заявления с Google Drive, ожидающие подтверждения экспертом</p>
+      </div>
+    </div>
+    <div class="actions actions-right" style="gap:10px;">
+      <a class="btn-ghost" href="/">← В генератор</a>
+      <button id="refreshBtn" class="btn-primary">Обновить</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="card">
+      <div class="step-head">
+        <span class="step-num">✓</span>
+        <h2>Заявления</h2>
+      </div>
+      <p class="hint">Нажмите на карточку, чтобы открыть редактор и подтвердить отправку итогового документа в Google Drive.</p>
+
+      <div id="reqList" class="req-grid"></div>
+      <div id="emptyState" class="meta hidden">Пока нет заявлений на апрув.</div>
+    </section>
+
+    <div id="toast" class="toast hidden"></div>
+  </main>
+
+  <script src="/static/approve.js"></script>
+</body>
+
+</html>
