@@ -1,11 +1,14 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Экспертное заключение — генератор</title>
   <link rel="stylesheet" href="/static/style.css">
+  <link id="favicon" rel="icon" type="image/x-icon" href="/static/favicon.ico">
 </head>
+
 <body>
   <header class="topbar">
     <div class="brand">
@@ -27,6 +30,9 @@
         <a class="help" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">ключ</a>
       </div>
     </div>
+    <div class="actions actions-right" style="gap:10px;">
+      <a class="btn-ghost" href="/approve">Апрув заявлений</a>
+    </div>
   </header>
 
   <main>
@@ -40,7 +46,7 @@
         <input type="file" id="pdfInput" accept="application/pdf" hidden>
         <div class="dz-inner">
           <svg viewBox="0 0 24 24" width="48" height="48" aria-hidden="true">
-            <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z"/>
+            <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z" />
           </svg>
           <p><strong>Кликните</strong> или перетащите PDF сюда</p>
           <p class="dz-hint">Первая страница — заявление, остальные — сертификаты</p>
@@ -87,7 +93,8 @@
       <div class="editor-split">
         <div class="cert-pool">
           <h3>Распознанные сертификаты</h3>
-          <p class="hint">Перетащите карточку в нужную дисциплину или нажмите «→» чтобы привязать. Можно редактировать поля прямо в карточке.</p>
+          <p class="hint">Перетащите карточку в нужную дисциплину или нажмите «→» чтобы привязать. Можно редактировать
+            поля прямо в карточке.</p>
           <div id="certPool" class="cert-list"></div>
         </div>
 
@@ -100,7 +107,7 @@
         </div>
       </div>
 
-      <div class="actions actions-right">
+      <div class="actions actions-right" id="editorActions">
         <button id="backBtn" class="btn-ghost">← Назад</button>
         <button id="generateBtn" class="btn-primary">Сгенерировать DOCX</button>
       </div>
@@ -111,4 +118,5 @@
 
   <script src="/static/app.js"></script>
 </body>
+
 </html>

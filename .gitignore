@@ -7,3 +7,7 @@ __pycache__/
 /tmp/
 .DS_Store
 *.pdf
+secrets/
+**/oauth-client.json
+**/drive-oauth-token.json
+.data/
